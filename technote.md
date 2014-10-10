@@ -82,9 +82,8 @@ General archive structure
 
 ### General archive block format
 
-col 1           | col 2    | col 3
---------------- | -------- | ----------------------------
 **Field**       | **Size** | **Description** 
+--------------- | -------- | ----------------------------
 Header CRC32    | uint32   | CRC32 of header data starting from  <dfn>Header size</dfn> field and up to and including the optional extra area.                   
 Header size     | vint     | Size of header data starting from  <dfn>Header type</dfn> field and up to and including the optional extra area. This field must not be longer than 3 bytes in current implementation, resulting in 2 MB maximum header size.                            
 Header type     | vint     | Type of archive header. Possible values are:<br/> 1   Main archive header.<br/> 2   File header.<br/> 3   Service header. <br/> 4   Archive encryption header.<br/> 5   End of archive header.          
@@ -175,9 +174,8 @@ Extra area      | ...    | Optional area containing additional header fields, pr
 
 Extra area of main archive header can contain following record types
 
-col 1    | col 2    | col 3        
+**Type** | **Name** | **Description**       
 -------- | -------- | -------
-**Type** | **Name** | **Description**                                 
 0x01     | Locator  | Contains positions of different service blocks, so they can be accessed quickly, without scanning the entire archive. This record is optional. If it is missing, it is still necessary to scan the entire archive to verify presence of service blocks.
 
 #### Locator record
@@ -207,8 +205,7 @@ Unpacked size           | vint    | Unpacked file or service data size.
 Attributes              | vint    | Operating system specific file attributes in case of file header. Might be either used for data specific needs or just reserved and set to 0 for service header.                                 
 mtime                   | uint32  | File modification time in Unix time format. Optional, present if 0x0002 file flag is set.                      
 Data CRC32              | uint32  | CRC32 of file or service data. Optional, present if 0x0004 file flag is set.
-Compression information | vint    | Lower 6 bits (0x003f mask) contain the version of compression algorithm, resulting in possible 0 - 63 values. Current version is 0. <br/>7th bit (0x0040) defines the solid flag. If it is set, RAR continues to use the compression dictionary left after processing preceding files.<br/>Bits 8 - 10 (0x0380 mask) define the compression method. Currently only
-values 0 - 5 are used. 0 means no compression. <br/>Bits 11 - 14 (0x3c00) define the minimum size of dictionary size required to extract data. Value 0 means 128 KB, 1 - 256 KB, ..., 14 - 2048 MB, 15 - 4096 MB.                          
+Compression information | vint    | Lower 6 bits (0x003f mask) contain the version of compression algorithm, resulting in possible 0 - 63 values. Current version is 0. <br/>7th bit (0x0040) defines the solid flag. If it is set, RAR continues to use the compression dictionary left after processing preceding files.<br/>Bits 8 - 10 (0x0380 mask) define the compression method. Currently only values 0 - 5 are used. 0 means no compression. <br/>Bits 11 - 14 (0x3c00) define the minimum size of dictionary size required to extract data. Value 0 means 128 KB, 1 - 256 KB, ..., 14 - 2048 MB, 15 - 4096 MB.                          
 Host OS                 | vint    | Type of operating system used to create the archive.  <br/>0x0000   Windows.  <br/>0x0001   Unix.            
 Name length             | vint    | File or service header name length.
 Name                    | ? bytes | Variable length field containing <br/><dfn>Name length</dfn> bytes in UTF-8 format without trailing zero. <br/>For file header this is a name of archived file. Forward slash character is used as the path separator both for Unix and Windows names. Backslashes are treated as a part of name for Unix names and as invalid character for Windows file names. Type of name is defined by  <dfn>Host OS</dfn> field. If Unix file name contains any high ASCII characters which cannot be correctly converted to Unicode and UTF-8, we map such characters to to 0xE080 - 0xE0FF private use Unicode area and insert 0xFFFE Unicode non-character to resulting string to indicate that it contains mapped characters, which need to be converted back when extracting. Concrete position of 0xFFFE is not defined, we need to search the entire stringfor it. Such mapped names are not portable and can be correctly unpacked only on the same system where they were created. <br/> For service header this field contains a name of service header. Now the following names are used: <table> <tbody><tr><td><a href="#srvcmt">CMT</a></td><td>Archive comment</td></tr> <tr><td><a href="#srvqopen">QO</a></td><td>Archive quick open data</td></tr> <tr><td>ACL</td><td>NTFS file permissions</td></tr> <tr><td>STM</td><td>NTFS alternate data stream</td></tr> <tr><td>RR</td><td>Recovery record</td></tr> </tbody></table>
@@ -217,9 +214,9 @@ Data area               | vint    | Optional data area, present only if 0x0002 h
 
 File and service headers use the same types of extra area records:
 
-col 1    | col 2           | col 3                            
--------- | --------------- | ---------------------------------
+
 **Type** | **Name**        | **Description**                  
+-------- | --------------- | ---------------------------------
 0x01     | File encryption | File encryption information.     
 0x02     | File hash       | File data hash.                  
 0x03     | File time       | High precision file time.        
@@ -363,9 +360,8 @@ Quick open data is the array consisting of data cache structures.
 Every data cache structure stores a portion of archived data
 and has the following format:
 
-col 1           | col 2    | col 3   
---------------- | -------- | ----------------------------
 **Field**       | **Size** | **Description**                            
+--------------- | -------- | ----------------------------
 Structure CRC32 | uint32   | CRC32 of structure data starting from  <dfn>Structure size</dfn> field.            
 Structure size  | vint     | Size of structure data starting from  <dfn>Flags</dfn> field. This field must not be longer than 3 bytes in current implementation, resulting in 2 MB maximum size.                                     
 Flags           | vint     | Currently set to 0.                        
