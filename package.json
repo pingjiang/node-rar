@@ -1,0 +1,49 @@
+{
+  "name": "node-rar",
+  "version": "0.0.1",
+  "main": "lib/node-rar.js",
+  "description": "NodeJS rar addon.",
+  "homepage": "https://github.com/pingjiang/node-rar",
+  "bugs": "https://github.com/pingjiang/node-rar/issues",
+  "author": {
+    "name": "pingjiang",
+    "email": "pingjiang1989@gmail.com",
+    "url": "https://github.com/pingjiang"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pingjiang/node-rar"
+  },
+  "license": "MIT",
+  "files": [
+    "lib",
+    "cli.js"
+  ],
+  "keywords": [
+    "node-rar",
+    "NodeJS",
+    "rar",
+    "unrar",
+    "addon"
+  ],
+  "devDependencies": {
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-watch": "^0.6.1",
+    "load-grunt-tasks": "^0.4.0",
+    "time-grunt": "^0.3.1",
+    "grunt-mocha-cli": "^1.9.0",
+    "jshint-stylish": "^0.2.0"
+  },
+  "scripts": {
+    "test": "grunt"
+  },
+  "bin": {
+    "node-rar": "cli.js"
+  },
+  "preferGlobal": "true",
+  "gypfile": true,
+  "dependencies": {
+    "bindings": "^1.2.1",
+    "nan": "^1.3.0"
+  }
+}
