@@ -33,6 +33,17 @@ module.exports = function(grunt) {
       },
       all: ['test/*.js']
     },
+    gyp: {
+      options: {
+        debug: true
+      },
+      build: {
+        command: 'build'
+      },
+      clean: {
+        command: 'clean'
+      }
+    },
     watch: {
       gruntfile: {
         files: '<%= jshint.gruntfile.src %>',

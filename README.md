@@ -1,7 +1,16 @@
-#  Node Rar [![Build Status](https://secure.travis-ci.org/pingjiang/node-rar.png?branch=master)](http://travis-ci.org/pingjiang/node-rar)
+#  Node Rar Addon [![Build Status](https://secure.travis-ci.org/pingjiang/node-rar.png?branch=master)](http://travis-ci.org/pingjiang/node-rar)
 
-> NodeJS rar addon.
+Node Rar Addon for reading RAR archives using the bundled UnRAR library.
 
+This extension uses a modified version of the UnRAR library. The UnRAR library
+is an official open-source library by RARLabs, an auto generated subset of the
+RAR codebase. It is available from http://www.rarlab.com/rar_add.htm
+Please note that it has a more restrictive license than the NodeJS bindings,
+barring using it to re-create the RAR compression algorithm. See
+vendor/unrar/LICENSE.txt for details.
+
+Some modifications have been applied to the UnRAR library, mainly to allow
+streaming extraction of files without using threads.
 
 ## Getting Started
 
@@ -32,6 +41,11 @@ _(Coming soon)_
 
 _(Coming soon)_
 
+
+## Credits
+
+* Unrar - http://www.rarlab.com/rar_add.htm
+* php-rar - https://github.com/cataphract/php-rar
 
 ## Contributing
 

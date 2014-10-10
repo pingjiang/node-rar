@@ -2,7 +2,7 @@
   "name": "node-rar",
   "version": "0.0.1",
   "main": "lib/node-rar.js",
-  "description": "NodeJS rar addon.",
+  "description": "Node Rar Addon for reading RAR archives using the bundled UnRAR library.",
   "homepage": "https://github.com/pingjiang/node-rar",
   "bugs": "https://github.com/pingjiang/node-rar/issues",
   "author": {
@@ -29,10 +29,11 @@
   "devDependencies": {
     "grunt-contrib-jshint": "^0.10.0",
     "grunt-contrib-watch": "^0.6.1",
-    "load-grunt-tasks": "^0.4.0",
-    "time-grunt": "^0.3.1",
     "grunt-mocha-cli": "^1.9.0",
-    "jshint-stylish": "^0.2.0"
+    "grunt-node-gyp": "^0.4.1",
+    "jshint-stylish": "^0.2.0",
+    "load-grunt-tasks": "^0.4.0",
+    "time-grunt": "^0.3.1"
   },
   "scripts": {
     "test": "grunt"
