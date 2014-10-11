@@ -25,7 +25,7 @@ using namespace v8;
 
 /// mode: 0 list, 1 extract, 2 list inc split
 /// op: 0 skip, 1 test, 2 extract
-int _processArchive(int mode, char* filepath, char* toDir, char* password, Local<Function> cb) {
+int _processArchive(int mode, int op, char* filepath, char* toDir, char* password, Local<Function> cb) {
   struct RAROpenArchiveDataEx archiveData;
   reset_RAROpenArchiveDataEx(&archiveData);
   archiveData.ArcName = filepath;
@@ -48,7 +48,7 @@ int _processArchive(int mode, char* filepath, char* toDir, char* password, Local
       reset_RARHeaderDataEx(&entry);
       result = RARReadHeaderEx(handler, &entry);
       if (result == 0) {
-        result = RARProcessFile(handler, mode == 0 ? 0 : 2, toDir, NULL);
+        result = RARProcessFile(handler, op, toDir, NULL);
       }
       if (result != 0)
           break;
@@ -86,6 +86,7 @@ Handle<Value> processArchive(const Arguments& args) {
   }
   
   int openMode = 0;
+  bool isTest = false;
   Local<Object> options = args[0]->IsString() ? Object::New() : args[0]->ToObject();
   if (args[0]->IsString()) {
     options->Set(String::NewSymbol("filepath"), args[0]->ToString());
@@ -113,6 +114,11 @@ Handle<Value> processArchive(const Arguments& args) {
   }
   Local<Function> cb = (args.Length()> 1 && args[1]->IsFunction()) ? Local<Function>::Cast(args[1]) : FunctionTemplate::New(DUMMY)->GetFunction();
   
+  Local<Value> isTestValue = options->Get(String::NewSymbol("test"));
+  if (!isTestValue->IsUndefined()) {
+    isTest = true;
+  }
+  
   char toDirBuf[1024] = { 0 }; 
   Local<Value> toDirValue = options->Get(String::NewSymbol("toDir"));
   if (openMode == 1) {
@@ -126,7 +132,7 @@ Handle<Value> processArchive(const Arguments& args) {
     }
   }
   
-  int ret = _processArchive(openMode, archiveFilePath, 
+  int ret = _processArchive(openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath, 
     toDirValue->IsString() ? toDirBuf : NULL, 
     passwordValue->IsString() ? passwordBuf : NULL, cb);
   
