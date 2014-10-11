@@ -12,8 +12,8 @@
           'RAR_SMP',
           'RARDLL'
       ],
-      'cflags!': [ '-fexceptions' ],
-      'cflags_cc!': [ '-fexceptions' ],
+      'cflags': [ '-fexceptions' ],
+      'cflags_cc': [ '-fexceptions' ],
       'conditions': [
           ['OS=="mac"', {
             'xcode_settings': {
