@@ -25,17 +25,21 @@ using namespace v8;
 
 /// mode: 0 list, 1 extract, 2 list inc split
 /// op: 0 skip, 1 test, 2 extract
-int _processArchive(int mode, const char* filepath, const char* toDir, Local<Function> cb) {
+int _processArchive(int mode, char* filepath, char* toDir, char* password, Local<Function> cb) {
   struct RAROpenArchiveDataEx archiveData;
   reset_RAROpenArchiveDataEx(&archiveData);
-  char archiveFilePath[2048]; strcpy(archiveFilePath, filepath);
-  archiveData.ArcName = archiveFilePath;
+  archiveData.ArcName = filepath;
   archiveData.OpenMode = mode;
-  _D(archiveFilePath);
+  
   HANDLE handler = RAROpenArchiveEx(&archiveData);
   if (archiveData.OpenResult != ERAR_SUCCESS) {
     _D("open archive error: " << archiveData.OpenResult);
     return archiveData.OpenResult;
+  }
+  
+  if (password != NULL) { 
+    _D("password: " << password);
+    RARSetPassword(handler, password);
   }
   
   int result = 0;
@@ -44,15 +48,12 @@ int _processArchive(int mode, const char* filepath, const char* toDir, Local<Fun
       reset_RARHeaderDataEx(&entry);
       result = RARReadHeaderEx(handler, &entry);
       if (result == 0) {
-        char toDirBuf[1024]; if (toDir != NULL) { strcpy(toDirBuf, toDir); }
-        _D("toDir: " << toDirBuf);
-        result = RARProcessFile(handler, mode == 0 ? 0 : 2, toDir != NULL ? toDirBuf : NULL, NULL);
+        result = RARProcessFile(handler, mode == 0 ? 0 : 2, toDir, NULL);
       }
       if (result != 0)
           break;
       Local<Object> entryObj = Object::New();
       entryObj->Set(String::NewSymbol("FileName"), String::New(entry.FileName));
-      // onEntry(entryObj);
       _D("FileName: " << entry.FileName);
       if (!cb.IsEmpty()) {
         const unsigned argc = 1;
@@ -69,53 +70,77 @@ int _processArchive(int mode, const char* filepath, const char* toDir, Local<Fun
   return result;
 }
 
-int _listArchive(const char* filepath, Local<Function> cb) {
-  return _processArchive(0, filepath, NULL, cb);
-}
-int _extractArchive(const char* filepath, const char* toDir, Local<Function> cb) {
-  return _processArchive(1, filepath, toDir, cb);
-}
-
-Handle<Value> listArchive(const Arguments& args) {
+Handle<Value> DUMMY(const Arguments& args) {
   HandleScope scope;
   
-  if (args.Length()> 0 && args[0]->IsString()) {
-    Local<String> filepath = args[0]->ToString();
-    if (args.Length()> 1 && args[1]->IsFunction()) {
-      Local<Function> cb = Local<Function>::Cast(args[1]);
-      String::Utf8Value value(filepath);
-      const char* filepathStr = (const char*)*value;
-      _listArchive(filepathStr, cb);
-    }
-  }
-  // ThrowException(Exception::TypeError(String::New("Wrong arguments")));
   return scope.Close(Undefined());
 }
 
-Handle<Value> extractArchive(const Arguments& args) {
+// processArchive(options, cb)
+Handle<Value> processArchive(const Arguments& args) {
   HandleScope scope;
   
-  if (args.Length()> 1 && args[0]->IsString() && args[1]->IsString()) {
-    Local<String> filepath = args[0]->ToString();
-    Local<String> toDir = args[1]->ToString();
-    if (args.Length()> 2 && args[2]->IsFunction()) {
-      Local<Function> cb = Local<Function>::Cast(args[2]);
-      String::Utf8Value value(filepath);
-      const char* filepathStr = (const char*)*value;
-      String::Utf8Value toDirValue(toDir);
-      const char* toDirStr = (const char*)*toDirValue;
-      _extractArchive(filepathStr, toDirStr, cb);
+  if (args.Length() < 1) {
+    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
+    return scope.Close(Undefined());
+  }
+  
+  int openMode = 0;
+  Local<Object> options = args[0]->IsString() ? Object::New() : args[0]->ToObject();
+  if (args[0]->IsString()) {
+    options->Set(String::NewSymbol("filepath"), args[0]->ToString());
+  }
+  Local<Value> openModeValue = options->Get(String::NewSymbol("openMode"));
+  if (openModeValue->IsNumber()) {
+    openMode = openModeValue->NumberValue();
+  }
+  Local<Value> filepathValue = options->Get(String::NewSymbol("filepath"));
+  if (!filepathValue->IsString()) {
+    ThrowException(Exception::TypeError(String::New("Wrong arguments `filepath`")));
+    return scope.Close(Undefined());
+  }
+  String::Utf8Value value(filepathValue);
+  const char* filepathStr = (const char*)*value;
+  char archiveFilePath[2048]; 
+  strncpy(archiveFilePath, filepathStr, 2048);
+  
+  Local<Value> passwordValue = options->Get(String::NewSymbol("password"));
+  char passwordBuf[128];
+  if (passwordValue->IsString()) {
+    String::Utf8Value value1(passwordValue);
+    const char* passwordStr = (const char*)*value1;
+    strncpy(passwordBuf, passwordStr, 128); 
+  }
+  Local<Function> cb = (args.Length()> 1 && args[1]->IsFunction()) ? Local<Function>::Cast(args[1]) : FunctionTemplate::New(DUMMY)->GetFunction();
+  
+  char toDirBuf[1024] = { 0 }; 
+  Local<Value> toDirValue = options->Get(String::NewSymbol("toDir"));
+  if (openMode == 1) {
+    if (toDirValue->IsString()) { 
+      String::Utf8Value value2(toDirValue);
+      const char* toDirStr = (const char*)*value2;
+      strncpy(toDirBuf, toDirStr, 1024); 
+    } else {
+      ThrowException(Exception::TypeError(String::New("Wrong arguments `toDir` for extract mode")));
+      return scope.Close(Undefined());
     }
   }
-  // ThrowException(Exception::TypeError(String::New("Wrong arguments")));
+  
+  int ret = _processArchive(openMode, archiveFilePath, 
+    toDirValue->IsString() ? toDirBuf : NULL, 
+    passwordValue->IsString() ? passwordBuf : NULL, cb);
+  
+  if (ret != 0) {
+    ThrowException(Exception::Error(String::New("Process archive error")));
+    _D("error code is " << ret);
+  }
   return scope.Close(Undefined());
 }
 
 void init(Handle<Object> exports) {
   setlocale(LC_ALL,"");
   
-  exports->Set(String::NewSymbol("listArchive"), FunctionTemplate::New(listArchive)->GetFunction());
-  exports->Set(String::NewSymbol("extractArchive"), FunctionTemplate::New(extractArchive)->GetFunction());
+  exports->Set(String::NewSymbol("processArchive"), FunctionTemplate::New(processArchive)->GetFunction());
 }
 
 NODE_MODULE(unrar, init);
