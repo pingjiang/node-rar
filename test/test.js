@@ -26,7 +26,7 @@ var rmdirForce = function(directories, callback) {
 };
 var MAPFILES = function(a) { return a.map(function(f) { return {FileName: f}; }); };
 var EXISTS_FILES1 = function(a) { return a.forEach(function(f) { assert.ok(fs.existsSync('./tmp/'+f)); }); };
-var EXISTS_FILES = function(a) {};
+var EXISTS_FILES = function(a) { assert(a); };
 
 describe('node-rar node module.', function() {
   describe('list archive', function() {
@@ -51,6 +51,16 @@ describe('node-rar node module.', function() {
     it('must not found', function() {
       var entries = rar.list('./test/fixtures/no_such_file.rar');
       assert(!entries);
+    });
+    
+    it('must list entries', function() {
+      var entries = rar.list('./test/fixtures/我爱你.rar');
+      var expected = [
+      '你',
+      '我', 
+      '爱',
+      ];
+      assert.deepEqual(entries, MAPFILES(expected));
     });
     
     it('test 4mb.rar', function() {
@@ -329,6 +339,16 @@ describe('node-rar node module.', function() {
       var expected = [
       'plain.txt', 
       'test file with whitespaces.txt'
+      ];
+      EXISTS_FILES(expected);
+    });
+    
+    it('must test entries', function() {
+      rar.test('./test/fixtures/我爱你.rar', tmpdir);
+      var expected = [
+      '我', 
+      '爱', 
+      '你', 
       ];
       EXISTS_FILES(expected);
     });
@@ -615,6 +635,16 @@ describe('node-rar node module.', function() {
       var expected = [
       'plain.txt', 
       'test file with whitespaces.txt'
+      ];
+      EXISTS_FILES1(expected);
+    });
+    
+    it('must extract entries', function() {
+      rar.extract('./test/fixtures/我爱你.rar', tmpdir);
+      var expected = [
+      '我', 
+      '爱', 
+      '你', 
       ];
       EXISTS_FILES1(expected);
     });

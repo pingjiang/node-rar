@@ -127,8 +127,10 @@ Handle<Value> processArchive(const Arguments& args) {
       const char* toDirStr = (const char*)*value2;
       strncpy(toDirBuf, toDirStr, 1024); 
     } else {
-      ThrowException(Exception::TypeError(String::New("Wrong arguments `toDir` for extract mode")));
-      return scope.Close(Undefined());
+      if (!isTest) {
+        ThrowException(Exception::TypeError(String::New("Wrong arguments `toDir` for extract mode")));
+        return scope.Close(Undefined());
+      }
     }
   }
   
