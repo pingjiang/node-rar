@@ -1,7 +1,7 @@
 {
   "name": "node-rar",
   "version": "0.0.1",
-  "main": "lib/node-rar.js",
+  "main": "lib/rar.js",
   "description": "Node Rar Addon for reading RAR archives using the bundled UnRAR library.",
   "homepage": "https://github.com/pingjiang/node-rar",
   "bugs": "https://github.com/pingjiang/node-rar/issues",
@@ -15,10 +15,6 @@
     "url": "https://github.com/pingjiang/node-rar"
   },
   "license": "MIT",
-  "files": [
-    "lib",
-    "cli.js"
-  ],
   "keywords": [
     "node-rar",
     "NodeJS",

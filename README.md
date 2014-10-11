@@ -52,8 +52,8 @@ $ node-rar --version
 
 - [x] 实现rar文件查看，测试和解压。
 - [ ] 支持分卷解压，多文件密码等。
-- [ ] 兼容支持NodeJS的云平台。
-- [ ] 发布到NPM上。
+- [x] 兼容支持NodeJS的云平台。
+- [x] 发布到NPM上。
 - [ ] 兼容Windows，Linux和MacOSX。
 
 
