@@ -1,4 +1,4 @@
-/*global describe,it*/
+/*global describe, it, before, after */
 'use strict';
 var assert = require('assert');
 var fs = require('fs');
@@ -12,7 +12,9 @@ var execFile = function(cmd, arg, directories, callback) {
   var args = directories;
   args.unshift(arg);
   child.execFile(cmd, args, {env:process.env}, function(err, stdout, stderr) {
-    callback && callback.apply(this, arguments);
+    if (callback) {
+      callback.call(this, err, stdout, stderr);
+    }
   });
 };
 
@@ -25,10 +27,6 @@ var rmdirForce = function(directories, callback) {
 
 
 describe('node-rar node module.', function() {
-  it('must be world', function() {
-    assert( rar.hello(), 'world');
-  });
-  
   describe('list archive', function() {
     it('must list entries', function() {
       var entries = rar.list('./test/fixtures/linux_rar.rar');
@@ -45,7 +43,7 @@ describe('node-rar node module.', function() {
       if (fs.existsSync('tmp')) {
         rmdirForce('tmp');
       }
-      fs.mkdirSync('tmp');
+      mkdirp('tmp');
     });
   
     it('must extract entries', function() {

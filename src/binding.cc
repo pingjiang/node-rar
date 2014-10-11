@@ -15,40 +15,13 @@
 #endif // _DEBUG
 
 static void reset_RARHeaderDataEx(struct RARHeaderDataEx* s) {
-  // memset(s->ArcName, 0, 1024);
-//   memset(s->ArcNameW, 0, 1024);
-//   memset(s->FileName, 0, 1024);
-//   memset(s->FileNameW, 0, 1024);
   memset(s, 0, sizeof(struct RARHeaderDataEx));
 }
 static void reset_RAROpenArchiveDataEx(struct RAROpenArchiveDataEx* s) {
-  // s->ArcName = NULL;
   memset(s, 0, sizeof(struct RAROpenArchiveDataEx));
 }
 
 using namespace v8;
-
-Handle<Value> Method(const Arguments& args) {
-  HandleScope scope;
-  return scope.Close(String::New("world"));
-}
-
-// class ListHandler {
-// public:
-//   ListHandler() : count(0) { }
-//
-//   void operator()(Handle<Object> entry) {
-//     entries->Set(count++, entry);
-//   }
-//
-//   Handle<v8::Array> getEntries() const {
-//     return entries;
-//   }
-// private:
-//   Handle<v8::Array> entries;
-//   int count;
-// };
-
 
 /// mode: 0 list, 1 extract, 2 list inc split
 /// op: 0 skip, 1 test, 2 extract
@@ -106,7 +79,6 @@ int _extractArchive(const char* filepath, const char* toDir, Local<Function> cb)
 Handle<Value> listArchive(const Arguments& args) {
   HandleScope scope;
   
-  _D("list archive");
   if (args.Length()> 0 && args[0]->IsString()) {
     Local<String> filepath = args[0]->ToString();
     if (args.Length()> 1 && args[1]->IsFunction()) {
@@ -123,7 +95,6 @@ Handle<Value> listArchive(const Arguments& args) {
 Handle<Value> extractArchive(const Arguments& args) {
   HandleScope scope;
   
-  _D("extract archive");
   if (args.Length()> 1 && args[0]->IsString() && args[1]->IsString()) {
     Local<String> filepath = args[0]->ToString();
     Local<String> toDir = args[1]->ToString();
@@ -143,7 +114,6 @@ Handle<Value> extractArchive(const Arguments& args) {
 void init(Handle<Object> exports) {
   setlocale(LC_ALL,"");
   
-  exports->Set(String::NewSymbol("hello"), FunctionTemplate::New(Method)->GetFunction());
   exports->Set(String::NewSymbol("listArchive"), FunctionTemplate::New(listArchive)->GetFunction());
   exports->Set(String::NewSymbol("extractArchive"), FunctionTemplate::New(extractArchive)->GetFunction());
 }
