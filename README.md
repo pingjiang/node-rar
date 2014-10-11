@@ -17,29 +17,6 @@ streaming extraction of files without using threads.
 Install the module with: `npm install node-rar`
 
 ```js
-var node-rar = require('node-rar');
-node-rar.awesome(); // "awesome"
-```
-
-Install with cli command
-
-```sh
-$ npm install -g node-rar
-$ node-rar --help
-$ node-rar --version
-```
-
-
-
-
-## Documentation
-
-_(Coming soon)_
-
-
-## Examples
-
-```
 var rar = require('node-rar');
 
 /// list archive entries
@@ -54,6 +31,30 @@ rar.test('path/to/file.rar', 'dir/to/test', 'optional password');
 rar.extract('path/to/file.rar', 'dir/to/extract', 'optional password');
 // => [entries]
 ```
+
+Install with cli command
+
+```sh
+$ npm install -g node-rar
+$ node-rar --help
+$ node-rar --version
+```
+
+## Documentation
+
+在开发一个Web字幕的应用的时候需要解压rar字幕文件，但是NodeJS没有rar解压的库。
+有几个rar解压的库仅仅是封装了unrar命令行工具实现的，在很多的云环境上都用不起来。
+所以我花了几天的时间利用unrar的源码开发了一个NodeJS插件。
+插件的实现参考了php-rar的代码，采用了php-rar的测试用例。
+插件目前还只是简单封装了unrar的接口，后面如果有需要可以在此基础上扩展。
+
+## Todo
+
+- [x] 实现rar文件查看，测试和解压。
+- [ ] 支持分卷解压，多文件密码等。
+- [ ] 兼容支持NodeJS的云平台。
+- [ ] 发布到NPM上。
+- [ ] 兼容Windows，Linux和MacOSX。
 
 
 ## Credits
