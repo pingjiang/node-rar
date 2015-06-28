@@ -2,6 +2,7 @@
 #include <v8.h>
 #include "rar.hpp"
 #include <iostream>
+#include <nan.h>
 
 #ifdef _DEBUG
 #define _D(msg) do {\
@@ -25,7 +26,7 @@ using namespace v8;
 
 /// mode: 0 list, 1 extract, 2 list inc split
 /// op: 0 skip, 1 test, 2 extract
-int _processArchive(Isolate* isolate, int mode, int op, char* filepath, char* toDir, char* password, Local<Function> cb) {
+int _processArchive(int mode, int op, char* filepath, char* toDir, char* password, Local<Function> cb) {
   struct RAROpenArchiveDataEx archiveData;
   reset_RAROpenArchiveDataEx(&archiveData);
   archiveData.ArcName = filepath;
@@ -52,13 +53,13 @@ int _processArchive(Isolate* isolate, int mode, int op, char* filepath, char* to
       }
       if (result != 0)
           break;
-      Local<Object> entryObj = Object::New(isolate);
-      entryObj->Set(String::NewFromUtf8(isolate, "FileName", String::kInternalizedString), String::NewFromUtf8(isolate, entry.FileName));
+      Local<Object> entryObj = NanNew<Object>();
+      entryObj->Set(NanNew<String>("FileName"), NanNew<String>(entry.FileName));
       _D("FileName: " << entry.FileName);
       if (!cb.IsEmpty()) {
         const unsigned argc = 1;
         Local<Value> argv[argc] = { entryObj };
-        cb->Call(isolate->GetCurrentContext()->Global(), argc, argv);
+        NanMakeCallback(NanGetCurrentContext()->Global(), cb, argc, argv);
       } else {
         _D("cb is empty");
       }
@@ -70,57 +71,55 @@ int _processArchive(Isolate* isolate, int mode, int op, char* filepath, char* to
   return result;
 }
 
-void DUMMY(const FunctionCallbackInfo<Value>& info) {
-
+NAN_METHOD(DUMMY) {
+  NanScope();
+  NanReturnUndefined();
 }
 
-// processArchive(options, cb)
-void processArchive(const FunctionCallbackInfo<Value>& info) {
+NAN_METHOD(processArchive) {
+  NanScope();
 
-  Isolate* isolate = Isolate::GetCurrent();
-  HandleScope scope(isolate);
-
-  if (info.Length() < 1) {
-    isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments")));
-    return;
+  if (args.Length() < 1) {
+    NanThrowError("Wrong arguments");
+    NanReturnUndefined();
   }
 
   int openMode = 0;
   bool isTest = false;
-  Local<Object> options = info[0]->IsString() ? Object::New(isolate) : info[0]->ToObject();
-  if (info[0]->IsString()) {
-    options->Set(String::NewFromUtf8(isolate, "filepath", String::kInternalizedString), info[0]->ToString());
+  Local<Object> options = args[0]->IsString() ? NanNew<Object>() : args[0]->ToObject();
+  if (args[0]->IsString()) {
+    options->Set(NanNew<String>("filepath"), args[0]->ToString());
   }
-  Local<Value> openModeValue = options->Get(String::NewFromUtf8(isolate, "openMode", String::kInternalizedString));
+  Local<Value> openModeValue = options->Get(NanNew<String>("openMode"));
   if (openModeValue->IsNumber()) {
     openMode = openModeValue->NumberValue();
   }
-  Local<Value> filepathValue = options->Get(String::NewFromUtf8(isolate, "filepath", String::kInternalizedString));
+  Local<Value> filepathValue = options->Get(NanNew<String>("filepath"));
   if (!filepathValue->IsString()) {
-    isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments `filepath`")));
-    return;
+    NanThrowError("Wrong arguments `filepath`");
+    NanReturnUndefined();
   }
   String::Utf8Value value(filepathValue);
   const char* filepathStr = (const char*)*value;
   char archiveFilePath[2048];
   strncpy(archiveFilePath, filepathStr, 2048);
 
-  Local<Value> passwordValue = options->Get(String::NewFromUtf8(isolate, "password", String::kInternalizedString));
+  Local<Value> passwordValue = options->Get(NanNew<String>("password"));
   char passwordBuf[128];
   if (passwordValue->IsString()) {
     String::Utf8Value value1(passwordValue);
     const char* passwordStr = (const char*)*value1;
     strncpy(passwordBuf, passwordStr, 128);
   }
-  Local<Function> cb = (info.Length()> 1 && info[1]->IsFunction()) ? Local<Function>::Cast(info[1]) : FunctionTemplate::New(isolate, DUMMY)->GetFunction();
+  Local<Function> cb = (args.Length() > 1 && args[1]->IsFunction()) ? args[1].As<Function>() : NanNew<FunctionTemplate>(DUMMY)->GetFunction();
 
-  Local<Value> isTestValue = options->Get(String::NewFromUtf8(isolate, "test", String::kInternalizedString));
+  Local<Value> isTestValue = options->Get(NanNew<String>("test"));
   if (!isTestValue->IsUndefined()) {
     isTest = true;
   }
 
   char toDirBuf[1024] = { 0 };
-  Local<Value> toDirValue = options->Get(String::NewFromUtf8(isolate, "toDir", String::kInternalizedString));
+  Local<Value> toDirValue = options->Get(NanNew<String>("toDir"));
   if (openMode == 1) {
     if (toDirValue->IsString()) {
       String::Utf8Value value2(toDirValue);
@@ -128,25 +127,27 @@ void processArchive(const FunctionCallbackInfo<Value>& info) {
       strncpy(toDirBuf, toDirStr, 1024);
     } else {
       if (!isTest) {
-        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments `toDir` for extract mode")));
-        return;
+        NanThrowError("Wrong arguments `toDir` for extract mode");
+        NanReturnUndefined();
       }
     }
   }
 
-  int ret = _processArchive(isolate, openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath,
+  int ret = _processArchive(openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath,
     toDirValue->IsString() ? toDirBuf : NULL,
     passwordValue->IsString() ? passwordBuf : NULL, cb);
 
   if (ret != 0) {
-    isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "Process archive error")));
+    NanThrowError("Process archive error");
     _D("error code is " << ret);
   }
+
+  NanReturnUndefined();
 }
 
 void init(Handle<Object> exports) {
   setlocale(LC_ALL,"");
-  NODE_SET_METHOD(exports, "processArchive", processArchive);
+  exports->Set(NanNew<String>("processArchive"), NanNew<FunctionTemplate>(processArchive)->GetFunction());
 }
 
 NODE_MODULE(unrar, init);
