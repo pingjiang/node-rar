@@ -7,7 +7,7 @@
 #define _D(msg) do {\
   std::cout << __FILE__ << ":" << __LINE__ << ">> " << msg << std::endl;\
 } while(0)
-  
+
 #else
 
 #define _D(msg)
@@ -25,23 +25,23 @@ using namespace v8;
 
 /// mode: 0 list, 1 extract, 2 list inc split
 /// op: 0 skip, 1 test, 2 extract
-int _processArchive(int mode, int op, char* filepath, char* toDir, char* password, Local<Function> cb) {
+int _processArchive(Isolate* isolate, int mode, int op, char* filepath, char* toDir, char* password, Local<Function> cb) {
   struct RAROpenArchiveDataEx archiveData;
   reset_RAROpenArchiveDataEx(&archiveData);
   archiveData.ArcName = filepath;
   archiveData.OpenMode = mode;
-  
+
   HANDLE handler = RAROpenArchiveEx(&archiveData);
   if (archiveData.OpenResult != ERAR_SUCCESS) {
     _D("open archive error: " << archiveData.OpenResult);
     return archiveData.OpenResult;
   }
-  
-  if (password != NULL) { 
+
+  if (password != NULL) {
     _D("password: " << password);
     RARSetPassword(handler, password);
   }
-  
+
   int result = 0;
   while (result == 0) {
       struct RARHeaderDataEx entry;
@@ -52,13 +52,13 @@ int _processArchive(int mode, int op, char* filepath, char* toDir, char* passwor
       }
       if (result != 0)
           break;
-      Local<Object> entryObj = Object::New();
-      entryObj->Set(String::NewSymbol("FileName"), String::New(entry.FileName));
+      Local<Object> entryObj = Object::New(isolate);
+      entryObj->Set(String::NewFromUtf8(isolate, "FileName", String::kInternalizedString), String::NewFromUtf8(isolate, entry.FileName));
       _D("FileName: " << entry.FileName);
       if (!cb.IsEmpty()) {
         const unsigned argc = 1;
         Local<Value> argv[argc] = { entryObj };
-        cb->Call(Context::GetCurrent()->Global(), argc, argv);
+        cb->Call(isolate->GetCurrentContext()->Global(), argc, argv);
       } else {
         _D("cb is empty");
       }
@@ -70,85 +70,83 @@ int _processArchive(int mode, int op, char* filepath, char* toDir, char* passwor
   return result;
 }
 
-Handle<Value> DUMMY(const Arguments& args) {
-  HandleScope scope;
-  
-  return scope.Close(Undefined());
+void DUMMY(const FunctionCallbackInfo<Value>& info) {
+
 }
 
 // processArchive(options, cb)
-Handle<Value> processArchive(const Arguments& args) {
-  HandleScope scope;
-  
-  if (args.Length() < 1) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-    return scope.Close(Undefined());
+void processArchive(const FunctionCallbackInfo<Value>& info) {
+
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
+
+  if (info.Length() < 1) {
+    isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments")));
+    return;
   }
-  
+
   int openMode = 0;
   bool isTest = false;
-  Local<Object> options = args[0]->IsString() ? Object::New() : args[0]->ToObject();
-  if (args[0]->IsString()) {
-    options->Set(String::NewSymbol("filepath"), args[0]->ToString());
+  Local<Object> options = info[0]->IsString() ? Object::New(isolate) : info[0]->ToObject();
+  if (info[0]->IsString()) {
+    options->Set(String::NewFromUtf8(isolate, "filepath", String::kInternalizedString), info[0]->ToString());
   }
-  Local<Value> openModeValue = options->Get(String::NewSymbol("openMode"));
+  Local<Value> openModeValue = options->Get(String::NewFromUtf8(isolate, "openMode", String::kInternalizedString));
   if (openModeValue->IsNumber()) {
     openMode = openModeValue->NumberValue();
   }
-  Local<Value> filepathValue = options->Get(String::NewSymbol("filepath"));
+  Local<Value> filepathValue = options->Get(String::NewFromUtf8(isolate, "filepath", String::kInternalizedString));
   if (!filepathValue->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments `filepath`")));
-    return scope.Close(Undefined());
+    isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments `filepath`")));
+    return;
   }
   String::Utf8Value value(filepathValue);
   const char* filepathStr = (const char*)*value;
-  char archiveFilePath[2048]; 
+  char archiveFilePath[2048];
   strncpy(archiveFilePath, filepathStr, 2048);
-  
-  Local<Value> passwordValue = options->Get(String::NewSymbol("password"));
+
+  Local<Value> passwordValue = options->Get(String::NewFromUtf8(isolate, "password", String::kInternalizedString));
   char passwordBuf[128];
   if (passwordValue->IsString()) {
     String::Utf8Value value1(passwordValue);
     const char* passwordStr = (const char*)*value1;
-    strncpy(passwordBuf, passwordStr, 128); 
+    strncpy(passwordBuf, passwordStr, 128);
   }
-  Local<Function> cb = (args.Length()> 1 && args[1]->IsFunction()) ? Local<Function>::Cast(args[1]) : FunctionTemplate::New(DUMMY)->GetFunction();
-  
-  Local<Value> isTestValue = options->Get(String::NewSymbol("test"));
+  Local<Function> cb = (info.Length()> 1 && info[1]->IsFunction()) ? Local<Function>::Cast(info[1]) : FunctionTemplate::New(isolate, DUMMY)->GetFunction();
+
+  Local<Value> isTestValue = options->Get(String::NewFromUtf8(isolate, "test", String::kInternalizedString));
   if (!isTestValue->IsUndefined()) {
     isTest = true;
   }
-  
-  char toDirBuf[1024] = { 0 }; 
-  Local<Value> toDirValue = options->Get(String::NewSymbol("toDir"));
+
+  char toDirBuf[1024] = { 0 };
+  Local<Value> toDirValue = options->Get(String::NewFromUtf8(isolate, "toDir", String::kInternalizedString));
   if (openMode == 1) {
-    if (toDirValue->IsString()) { 
+    if (toDirValue->IsString()) {
       String::Utf8Value value2(toDirValue);
       const char* toDirStr = (const char*)*value2;
-      strncpy(toDirBuf, toDirStr, 1024); 
+      strncpy(toDirBuf, toDirStr, 1024);
     } else {
       if (!isTest) {
-        ThrowException(Exception::TypeError(String::New("Wrong arguments `toDir` for extract mode")));
-        return scope.Close(Undefined());
+        isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, "Wrong arguments `toDir` for extract mode")));
+        return;
       }
     }
   }
-  
-  int ret = _processArchive(openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath, 
-    toDirValue->IsString() ? toDirBuf : NULL, 
+
+  int ret = _processArchive(isolate, openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath,
+    toDirValue->IsString() ? toDirBuf : NULL,
     passwordValue->IsString() ? passwordBuf : NULL, cb);
-  
+
   if (ret != 0) {
-    ThrowException(Exception::Error(String::New("Process archive error")));
+    isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, "Process archive error")));
     _D("error code is " << ret);
   }
-  return scope.Close(Undefined());
 }
 
 void init(Handle<Object> exports) {
   setlocale(LC_ALL,"");
-  
-  exports->Set(String::NewSymbol("processArchive"), FunctionTemplate::New(processArchive)->GetFunction());
+  NODE_SET_METHOD(exports, "processArchive", processArchive);
 }
 
 NODE_MODULE(unrar, init);
