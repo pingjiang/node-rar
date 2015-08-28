@@ -1,18 +1,20 @@
 {
-  "name": "node-rar",
-  "version": "0.0.2",
+  "name": "node-rar-updated",
+  "version": "0.0.1",
   "main": "lib/rar.js",
-  "description": "Node Rar Addon for reading RAR archives using the bundled UnRAR library.",
-  "homepage": "https://github.com/pingjiang/node-rar",
-  "bugs": "https://github.com/pingjiang/node-rar/issues",
+  "description": ["Updated Node Rar Addon for reading RAR archives using the ",
+    "bundled UnRAR library. Works with all versions of NodeJS. Forked from original ",
+    "node-rar at https://github.com/pingjiang/node-rar"],
+  "homepage": "https://github.com/davidcroda/node-rar",
+  "bugs": "https://github.com/davidcroda/node-rar/issues",
   "author": {
-    "name": "pingjiang",
-    "email": "pingjiang1989@gmail.com",
-    "url": "https://github.com/pingjiang"
+    "name": "davidcroda",
+    "email": "davidcroda@gmail.com",
+    "url": "https://github.com/davidcroda"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pingjiang/node-rar"
+    "url": "https://github.com/davidcroda/node-rar"
   },
   "license": "MIT",
   "keywords": [

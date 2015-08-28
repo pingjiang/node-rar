@@ -2,12 +2,13 @@
 #include <v8.h>
 #include "rar.hpp"
 #include <iostream>
+#include <nan.h>
 
 #ifdef _DEBUG
 #define _D(msg) do {\
   std::cout << __FILE__ << ":" << __LINE__ << ">> " << msg << std::endl;\
 } while(0)
-  
+
 #else
 
 #define _D(msg)
@@ -30,18 +31,18 @@ int _processArchive(int mode, int op, char* filepath, char* toDir, char* passwor
   reset_RAROpenArchiveDataEx(&archiveData);
   archiveData.ArcName = filepath;
   archiveData.OpenMode = mode;
-  
+
   HANDLE handler = RAROpenArchiveEx(&archiveData);
   if (archiveData.OpenResult != ERAR_SUCCESS) {
     _D("open archive error: " << archiveData.OpenResult);
     return archiveData.OpenResult;
   }
-  
-  if (password != NULL) { 
+
+  if (password != NULL) {
     _D("password: " << password);
     RARSetPassword(handler, password);
   }
-  
+
   int result = 0;
   while (result == 0) {
       struct RARHeaderDataEx entry;
@@ -52,13 +53,13 @@ int _processArchive(int mode, int op, char* filepath, char* toDir, char* passwor
       }
       if (result != 0)
           break;
-      Local<Object> entryObj = Object::New();
-      entryObj->Set(String::NewSymbol("FileName"), String::New(entry.FileName));
+      Local<Object> entryObj = NanNew<Object>();
+      entryObj->Set(NanNew<String>("FileName"), NanNew<String>(entry.FileName));
       _D("FileName: " << entry.FileName);
       if (!cb.IsEmpty()) {
         const unsigned argc = 1;
         Local<Value> argv[argc] = { entryObj };
-        cb->Call(Context::GetCurrent()->Global(), argc, argv);
+        NanMakeCallback(NanGetCurrentContext()->Global(), cb, argc, argv);
       } else {
         _D("cb is empty");
       }
@@ -70,85 +71,83 @@ int _processArchive(int mode, int op, char* filepath, char* toDir, char* passwor
   return result;
 }
 
-Handle<Value> DUMMY(const Arguments& args) {
-  HandleScope scope;
-  
-  return scope.Close(Undefined());
+NAN_METHOD(DUMMY) {
+  NanScope();
+  NanReturnUndefined();
 }
 
-// processArchive(options, cb)
-Handle<Value> processArchive(const Arguments& args) {
-  HandleScope scope;
-  
+NAN_METHOD(processArchive) {
+  NanScope();
+
   if (args.Length() < 1) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments")));
-    return scope.Close(Undefined());
+    NanThrowError("Wrong arguments");
+    NanReturnUndefined();
   }
-  
+
   int openMode = 0;
   bool isTest = false;
-  Local<Object> options = args[0]->IsString() ? Object::New() : args[0]->ToObject();
+  Local<Object> options = args[0]->IsString() ? NanNew<Object>() : args[0]->ToObject();
   if (args[0]->IsString()) {
-    options->Set(String::NewSymbol("filepath"), args[0]->ToString());
+    options->Set(NanNew<String>("filepath"), args[0]->ToString());
   }
-  Local<Value> openModeValue = options->Get(String::NewSymbol("openMode"));
+  Local<Value> openModeValue = options->Get(NanNew<String>("openMode"));
   if (openModeValue->IsNumber()) {
     openMode = openModeValue->NumberValue();
   }
-  Local<Value> filepathValue = options->Get(String::NewSymbol("filepath"));
+  Local<Value> filepathValue = options->Get(NanNew<String>("filepath"));
   if (!filepathValue->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Wrong arguments `filepath`")));
-    return scope.Close(Undefined());
+    NanThrowError("Wrong arguments `filepath`");
+    NanReturnUndefined();
   }
   String::Utf8Value value(filepathValue);
   const char* filepathStr = (const char*)*value;
-  char archiveFilePath[2048]; 
+  char archiveFilePath[2048];
   strncpy(archiveFilePath, filepathStr, 2048);
-  
-  Local<Value> passwordValue = options->Get(String::NewSymbol("password"));
+
+  Local<Value> passwordValue = options->Get(NanNew<String>("password"));
   char passwordBuf[128];
   if (passwordValue->IsString()) {
     String::Utf8Value value1(passwordValue);
     const char* passwordStr = (const char*)*value1;
-    strncpy(passwordBuf, passwordStr, 128); 
+    strncpy(passwordBuf, passwordStr, 128);
   }
-  Local<Function> cb = (args.Length()> 1 && args[1]->IsFunction()) ? Local<Function>::Cast(args[1]) : FunctionTemplate::New(DUMMY)->GetFunction();
-  
-  Local<Value> isTestValue = options->Get(String::NewSymbol("test"));
+  Local<Function> cb = (args.Length() > 1 && args[1]->IsFunction()) ? args[1].As<Function>() : NanNew<FunctionTemplate>(DUMMY)->GetFunction();
+
+  Local<Value> isTestValue = options->Get(NanNew<String>("test"));
   if (!isTestValue->IsUndefined()) {
     isTest = true;
   }
-  
-  char toDirBuf[1024] = { 0 }; 
-  Local<Value> toDirValue = options->Get(String::NewSymbol("toDir"));
+
+  char toDirBuf[1024] = { 0 };
+  Local<Value> toDirValue = options->Get(NanNew<String>("toDir"));
   if (openMode == 1) {
-    if (toDirValue->IsString()) { 
+    if (toDirValue->IsString()) {
       String::Utf8Value value2(toDirValue);
       const char* toDirStr = (const char*)*value2;
-      strncpy(toDirBuf, toDirStr, 1024); 
+      strncpy(toDirBuf, toDirStr, 1024);
     } else {
       if (!isTest) {
-        ThrowException(Exception::TypeError(String::New("Wrong arguments `toDir` for extract mode")));
-        return scope.Close(Undefined());
+        NanThrowError("Wrong arguments `toDir` for extract mode");
+        NanReturnUndefined();
       }
     }
   }
-  
-  int ret = _processArchive(openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath, 
-    toDirValue->IsString() ? toDirBuf : NULL, 
+
+  int ret = _processArchive(openMode, isTest ? 1 : (openMode == 0 ? 0 : 2), archiveFilePath,
+    toDirValue->IsString() ? toDirBuf : NULL,
     passwordValue->IsString() ? passwordBuf : NULL, cb);
-  
+
   if (ret != 0) {
-    ThrowException(Exception::Error(String::New("Process archive error")));
+    NanThrowError("Process archive error");
     _D("error code is " << ret);
   }
-  return scope.Close(Undefined());
+
+  NanReturnUndefined();
 }
 
 void init(Handle<Object> exports) {
   setlocale(LC_ALL,"");
-  
-  exports->Set(String::NewSymbol("processArchive"), FunctionTemplate::New(processArchive)->GetFunction());
+  exports->Set(NanNew<String>("processArchive"), NanNew<FunctionTemplate>(processArchive)->GetFunction());
 }
 
 NODE_MODULE(unrar, init);
