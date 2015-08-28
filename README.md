@@ -1,3 +1,12 @@
+## Updated to compile under all versions of NodeJS
+Forked from https://github.com/pingjiang/node-rar.
+
+I needed this module for nodejs >= 0.12. My pull request has been in for many months
+with no update and I believe the project may be abandoned, so I published this under
+an updated name so I could continue to use it in my projects. If the pull request is
+accepted in the original project, or the original project is updated, I will remove
+this package and repository. The module now works under all versions of NodeJS.
+
 #  Node Rar Addon [![Build Status](https://secure.travis-ci.org/pingjiang/node-rar.png?branch=master)](http://travis-ci.org/pingjiang/node-rar)
 
 Node Rar Addon for reading RAR archives using the bundled UnRAR library.
